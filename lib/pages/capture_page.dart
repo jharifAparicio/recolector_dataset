@@ -22,8 +22,8 @@ class CapturePage extends StatefulWidget {
   State<CapturePage> createState() => _CapturePageState();
 }
 
-const int maxPhotos = 50; // máximo de fotos a capturar
-const int intervalePhotos = 500; // milisegundos entre fotos
+const int maxPhotos = 20; // máximo de fotos a capturar
+const int intervalePhotos = 450; // milisegundos entre fotos
 List<String> photoPaths = [];
 String datasetFolder = 'dataset';
 
