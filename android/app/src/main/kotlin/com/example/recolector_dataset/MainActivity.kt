@@ -1,4 +1,4 @@
-package com.example.recolector_dataset
+package com.jharif.recolector_dataset
 
 import io.flutter.embedding.android.FlutterActivity
 

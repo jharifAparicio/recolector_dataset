@@ -6,18 +6,24 @@ import 'package:path_provider/path_provider.dart';
 import 'package:recolector_dataset/utils/delete_photos.dart';
 import 'package:uuid/uuid.dart';
 import 'gallery_page.dart';
+import 'package:recolector_dataset/utils/imagen_utils.dart';
 
 class CapturePage extends StatefulWidget {
-  final String selectedClass;
+  final String folderID;
+  final String className;
 
-  const CapturePage({super.key, required this.selectedClass});
+  const CapturePage({
+    super.key,
+    required this.folderID,
+    required this.className,
+  });
 
   @override
   State<CapturePage> createState() => _CapturePageState();
 }
 
-const maxPhotos = 5;
-const intervalePhotos = 250;
+const int maxPhotos = 50; // máximo de fotos a capturar
+const int intervalePhotos = 500; // milisegundos entre fotos
 List<String> photoPaths = [];
 String datasetFolder = 'dataset';
 
@@ -50,7 +56,7 @@ class _CapturePageState extends State<CapturePage> {
   Future<String> _getSavePath() async {
     // final dir = await getApplicationDocumentsDirectory();
     final dir = await getExternalStorageDirectory(); //
-    final folderPath = '${dir!.path}/dataset/${widget.selectedClass}';
+    final folderPath = '${dir!.path}/dataset/${widget.folderID}';
     final folder = Directory(folderPath);
 
     if (!await folder.exists()) {
@@ -73,27 +79,40 @@ class _CapturePageState extends State<CapturePage> {
 
     for (int i = 0; i < maxPhotos; i++) {
       try {
-        final fileName = '${uuid.v4()}.jpg';
+        final fileName = '${uuid.v4()}.png'; // Cambiado a png
         final filePath = '$folderPath/$fileName';
 
         await _controller!.takePicture().then((XFile file) async {
-          // Mover a carpeta destino con UUID nombre
-          await File(file.path).copy(filePath);
+          // Copiar temporalmente
+          final tempFile = await File(file.path).copy(filePath);
+
+          // Optimizar y convertir a PNG
+          final optimizedFile = await resizeAndCompressImage(tempFile);
+
+          // Eliminar el archivo jpg original (si quieres)
+          if (tempFile.path != optimizedFile.path) {
+            await tempFile.delete();
+          }
+
+          // Guardar la ruta del archivo optimizado
+          photoPaths.add(optimizedFile.path);
         });
 
         setState(() {
           photosTaken = i + 1;
         });
 
-        photoPaths.add(filePath);
-
         await Future.delayed(Duration(milliseconds: intervalePhotos));
       } catch (e) {
         print('Error capturando foto $i: $e');
       }
     }
+
     // cargar la dirección de las fotos tomadas
     datasetFolder = _getSavePath().toString();
+
+    // extraemos la carpeta del dataset
+    // temporal = datasetFolder.substring(0, datasetFolder.lastIndexOf('/'));
     setState(() {
       isCapturing = false;
     });
@@ -104,7 +123,7 @@ class _CapturePageState extends State<CapturePage> {
       context,
       MaterialPageRoute(
         builder: (_) =>
-            GalleryPage(photoPaths: photoPaths, clase: widget.selectedClass),
+            GalleryPage(photoPaths: photoPaths, folderID: widget.folderID),
       ),
     );
   }
@@ -118,7 +137,7 @@ class _CapturePageState extends State<CapturePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Capturando: ${widget.selectedClass}')),
+      appBar: AppBar(title: Text('Capturando: ${widget.className}')),
       body: Column(
         children: [
           if (_controller != null && _controller!.value.isInitialized)
@@ -148,7 +167,7 @@ class _CapturePageState extends State<CapturePage> {
             onPressed: () async {
               Navigator.pop(context);
               eliminarFotosLocales(
-                '${(await getExternalStorageDirectory())!.path}/dataset/${widget.selectedClass}',
+                '${(await getExternalStorageDirectory())!.path}/dataset/${widget.folderID}',
               );
             },
             child: Text('Volver'),

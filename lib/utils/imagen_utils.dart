@@ -3,30 +3,38 @@ import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-class ImageUtils {
-  /// Redimensiona una imagen a un ancho objetivo (proporcional)
-  /// y guarda en PNG para reducir peso.
-  static Future<File> resizeAndCompressImage(
-    File imageFile, {
-    int targetWidth = 600, // usa 600x800 que pediste antes
-    int targetHeight = 800,
-  }) async {
-    final imageBytes = await imageFile.readAsBytes();
-    final originalImage = img.decodeImage(imageBytes)!;
+Future<File> resizeAndCompressImage(
+  File imageFile, {
+  int targetWidth = 600,
+  int targetHeight = 800,
+  int quality = 70,
+}) async {
+  final imageBytes = await imageFile.readAsBytes();
+  final originalImage = img.decodeImage(imageBytes);
+  if (originalImage == null) {
+    throw Exception("No se pudo decodificar la imagen");
+  }
 
-    final resizedImage = img.copyResize(
+  // Solo redimensionar si es más grande que el objetivo
+  img.Image resizedImage = originalImage;
+  if (originalImage.width > targetWidth ||
+      originalImage.height > targetHeight ||
+      originalImage.width < targetWidth ||
+      originalImage.height < targetHeight) {
+    resizedImage = img.copyResize(
       originalImage,
       width: targetWidth,
       height: targetHeight,
     );
-
-    // Codificar como PNG
-    final resizedBytes = img.encodePng(resizedImage);
-
-    final tempDir = await getTemporaryDirectory();
-    final newFile = File('${tempDir.path}/${const Uuid().v4()}.png');
-
-    await newFile.writeAsBytes(resizedBytes);
-    return newFile;
   }
+
+  // Codificar como JPEG optimizado
+  final compressedBytes = img.encodeJpg(resizedImage, quality: quality);
+
+  // Guardar en carpeta temporal
+  final tempDir = await getTemporaryDirectory();
+  final newFile = File('${tempDir.path}/${const Uuid().v4()}.jpg');
+
+  await newFile.writeAsBytes(compressedBytes);
+  return newFile;
 }
