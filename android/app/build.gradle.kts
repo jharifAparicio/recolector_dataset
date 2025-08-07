@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.jharif.recolector_dataset"
     compileSdk = 36
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = 27.0.12077973
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -24,7 +24,7 @@ android {
         applicationId = "com.jharif.recolector_dataset"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 34
+        minSdk = 36
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
