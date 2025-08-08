@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:recolector_dataset/utils/delete_photos.dart';
@@ -19,11 +18,49 @@ class GalleryPage extends ConsumerStatefulWidget {
   ConsumerState<GalleryPage> createState() => _GalleryPageState();
 }
 
-double uploadProgress = 0.0; // 0.0 a 1.0
-bool uploading = false;
-
 class _GalleryPageState extends ConsumerState<GalleryPage> {
   bool uploading = false;
+  double uploadProgress = 0.0;
+  int totalPhotos = 0;
+  int uploadedPhotos = 0;
+
+  Future<void> startUpload() async {
+    setState(() {
+      uploading = true;
+      totalPhotos = widget.photoPaths.length;
+      uploadedPhotos = 0;
+      uploadProgress = 0.0;
+    });
+
+    await uploadAllPhotos(
+      ref,
+      widget.photoPaths.map((path) => File(path)).toList(),
+      widget.folderID,
+      (progress) {
+        // progress viene como 0.0 -> 1.0
+        setState(() {
+          uploadProgress = progress;
+          uploadedPhotos = (progress * totalPhotos).round();
+        });
+      },
+    );
+
+    if (!mounted) return;
+    setState(() {
+      uploading = false;
+      widget.photoPaths.clear();
+    });
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Fotos subidas exitosamente')));
+
+    await Future.delayed(const Duration(seconds: 1));
+    if (mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,14 +71,15 @@ class _GalleryPageState extends ConsumerState<GalleryPage> {
         children: [
           Expanded(
             child: widget.photoPaths.isEmpty
-                ? Center(child: Text('No hay fotos tomadas'))
+                ? const Center(child: Text('No hay fotos tomadas'))
                 : GridView.builder(
-                    padding: EdgeInsets.all(8),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                    ),
+                    padding: const EdgeInsets.all(8),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                        ),
                     itemCount: widget.photoPaths.length,
                     itemBuilder: (context, index) {
                       return Image.file(
@@ -53,101 +91,56 @@ class _GalleryPageState extends ConsumerState<GalleryPage> {
           ),
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            child: Column(
               children: [
-                ElevatedButton.icon(
-                  icon: Icon(Icons.upload_file),
-                  label: Text('Subir todas'),
-                  onPressed: uploading
-                      ? null
-                      : () async {
-                          setState(() {
-                            uploading = true;
-                            uploadProgress = 0.0; // inicializar barra
-                          });
-                          try {
-                            await uploadAllPhotos(
-                              ref,
-                              widget.photoPaths
-                                  .map((path) => File(path))
-                                  .toList(),
-                              widget.folderID,
-                              (progress) {
-                                // actualización en tiempo real
-                                setState(() {
-                                  uploadProgress = progress;
-                                });
-                              },
-                            );
-
-                            if (!mounted) return;
-                            setState(() {
-                              widget.photoPaths.clear();
-                            });
-                            // ignore: use_build_context_synchronously
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Fotos subidas exitosamente'),
-                              ),
-                            );
-
-                            await Future.delayed(Duration(seconds: 1));
-                            Navigator.of(
-                              // ignore: use_build_context_synchronously
-                              context,
-                            ).popUntil((route) => route.isFirst);
-                          } catch (e) {
-                            if (!mounted) return;
-                            // ignore: use_build_context_synchronously
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error al subir fotos: $e'),
-                              ),
-                            );
-                          } finally {
-                            // ignore: control_flow_in_finally
-                            if (!mounted) return;
-                            setState(() {
-                              uploading = false;
-                            });
-                          }
-                        },
-                ),
-
                 if (uploading) ...[
-                  SizedBox(height: 16),
                   LinearProgressIndicator(
                     value: uploadProgress,
                     backgroundColor: Colors.grey[300],
                     color: Colors.green,
+                    minHeight: 8,
                   ),
-                  SizedBox(height: 8),
-                  Text('${(uploadProgress * 100).toStringAsFixed(1)}% subido'),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${(uploadProgress * 100).toStringAsFixed(1)}% - '
+                    '$uploadedPhotos de $totalPhotos fotos subidas',
+                  ),
+                  const SizedBox(height: 16),
                 ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.upload_file),
+                      label: const Text('Subir todas'),
+                      onPressed: uploading ? null : startUpload,
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.delete),
+                      label: const Text('Eliminar todas'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
+                      onPressed: uploading
+                          ? null
+                          : () async {
+                              final folderPath = widget.photoPaths.first
+                                  .substring(
+                                    0,
+                                    widget.photoPaths.first.lastIndexOf('/'),
+                                  );
 
-                ElevatedButton.icon(
-                  icon: Icon(Icons.delete),
-                  label: Text('Eliminar todas'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  onPressed: uploading
-                      ? null
-                      : () async {
-                          final folderPath = widget.photoPaths.first.substring(
-                            0,
-                            widget.photoPaths.first.lastIndexOf('/'),
-                          );
+                              await eliminarFotosLocales(folderPath);
 
-                          await eliminarFotosLocales(folderPath);
-                          // recargar vista
-                          if (!mounted) return;
-                          setState(() {
-                            widget.photoPaths.clear();
-                          });
-                          // Eliminar todas las fotos locales después de subir
-                          // ignore: use_build_context_synchronously
-                          Navigator.pop(context);
-                        },
+                              if (!mounted) return;
+                              setState(() {
+                                widget.photoPaths.clear();
+                              });
+
+                              Navigator.pop(context);
+                            },
+                    ),
+                  ],
                 ),
               ],
             ),

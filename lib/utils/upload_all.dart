@@ -7,7 +7,7 @@ Future<void> uploadAllPhotos(
   WidgetRef ref,
   List<File> photos,
   String folderId, // ahora es el ID directo de la carpeta destino
-  void Function(double) onProgress, // callback
+  void Function(double progress) onProgress, // callback
 ) async {
   final driveService = ref.read(driveServiceProvider);
 
