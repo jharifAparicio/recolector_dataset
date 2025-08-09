@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:recolector_dataset/main.dart';
 import 'capture_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   String? selectedClass;
   String? folderID;
 
@@ -24,6 +26,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final driveService = ref.read(driveServiceProvider);
+
     return Scaffold(
       appBar: AppBar(title: Text('Selecciona la clase')),
       body: Padding(
@@ -61,6 +65,39 @@ class _HomePageState extends State<HomePage> {
                       );
                     },
               child: Text('Empezar captura'),
+            ),
+            // mostramos la lista de cantidad de fotos por clase
+            SizedBox(height: 20),
+            Expanded(
+              child: ListView.builder(
+                itemCount: classes.length,
+                itemBuilder: (context, index) {
+                  final classId = classes.keys.elementAt(index);
+                  return FutureBuilder<int>(
+                    future: driveService.PhotosCount(classId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return ListTile(
+                          title: Text(classes[classId]!),
+                          subtitle: Text('Cargando...'),
+                        );
+                      } else if (snapshot.hasError) {
+                        return ListTile(
+                          title: Text(classes[classId]!),
+                          subtitle: Text('Error: ${snapshot.error}'),
+                        );
+                      } else {
+                        return ListTile(
+                          title: Text(classes[classId]!),
+                          subtitle: Text(
+                            'Fotos: ${snapshot.data ?? 0} / 10000 \n Faltantes: ${10000 - (snapshot.data ?? 0)}',
+                          ),
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),

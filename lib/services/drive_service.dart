@@ -13,15 +13,33 @@ class DriveService {
   drive.DriveApi? _driveApi;
 
   /// Inicia sesión automáticamente con google_sign_in
+  //Future<void> init() async {
+  //  _currentUser = await _googleSignIn.signInSilently();
+  //
+  //  _currentUser ??= await _googleSignIn.signIn();
+  //
+  //  if (_currentUser == null) {
+  //    // Return a failure status instead of throwing immediately
+  //    // This allows the UI to show a proper error message
+  //    return Future.error(
+  //      'No se pudo iniciar sesión con Google. '
+  //      'Verifique su conexión a internet y las credenciales.',
+  //    );
+  //  }
+  //
+  //  final authHeaders = await _currentUser!.authHeaders;
+  //  final client = GoogleAuthClient(authHeaders);
+  //
+  //  _driveApi = drive.DriveApi(client);
+  //}
+
   Future<void> init() async {
     _currentUser = await _googleSignIn.signInSilently();
 
     _currentUser ??= await _googleSignIn.signIn();
 
     if (_currentUser == null) {
-      // Return a failure status instead of throwing immediately
-      // This allows the UI to show a proper error message
-      return Future.error(
+      throw Exception(
         'No se pudo iniciar sesión con Google. '
         'Verifique su conexión a internet y las credenciales.',
       );
@@ -46,6 +64,17 @@ class DriveService {
       uploadMedia: media,
     );
     return response.id;
+  }
+
+  Future<int> PhotosCount(String carpetaID) async {
+    if (_driveApi == null) throw Exception('Google Drive no inicializado');
+
+    // Consulta para contar las fotos en la carpeta
+    final query = "'$carpetaID' in parents and mimeType contains 'image/'";
+    // Utilizamos la API de Google Drive para listar los archivos
+    final fileList = await _driveApi!.files.list(q: query);
+    // Retornamos la cantidad de archivos encontrados
+    return fileList.files?.length ?? 0;
   }
 }
 

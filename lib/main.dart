@@ -3,43 +3,39 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'pages/home_page.dart';
 import 'services/drive_service.dart';
 
-final driveServiceProvider = Provider<DriveService>((ref) {
-  final service = DriveService();
-  // No hacemos init() aquí porque es async, mejor lo hacemos en initState del widget principal
-  return service;
-});
-
 void main() {
   runApp(const ProviderScope(child: RecolectorDatasetApp()));
 }
 
-class RecolectorDatasetApp extends ConsumerStatefulWidget {
+final driveServiceProvider = Provider<DriveService>((ref) => DriveService());
+
+final driveInitProvider = FutureProvider<void>((ref) async {
+  final driveService = ref.read(driveServiceProvider);
+  await driveService.init();
+});
+
+class RecolectorDatasetApp extends ConsumerWidget {
   const RecolectorDatasetApp({super.key});
 
   @override
-  ConsumerState<RecolectorDatasetApp> createState() =>
-      _RecolectorDatasetAppState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final initAsync = ref.watch(driveInitProvider);
 
-class _RecolectorDatasetAppState extends ConsumerState<RecolectorDatasetApp> {
-  @override
-  void initState() {
-    super.initState();
-    _initDrive();
-  }
-
-  Future<void> _initDrive() async {
-    final driveService = ref.read(driveServiceProvider);
-    await driveService.init(); // aquí inicializas y haces login
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Recolector Dataset',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.green),
-      home: HomePage(),
+    return initAsync.when(
+      data: (_) => MaterialApp(
+        title: 'Recolector Dataset',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(primarySwatch: Colors.green),
+        home: const HomePage(),
+      ),
+      loading: () => const MaterialApp(
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      ),
+      error: (e, st) => MaterialApp(
+        home: Scaffold(
+          body: Center(child: Text('Error al inicializar Drive: $e')),
+        ),
+      ),
     );
   }
 }
