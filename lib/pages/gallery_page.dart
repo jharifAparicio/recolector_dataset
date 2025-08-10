@@ -133,11 +133,13 @@ class _GalleryPageState extends ConsumerState<GalleryPage> {
                               await eliminarFotosLocales(folderPath);
 
                               if (!mounted) return;
+
                               setState(() {
                                 widget.photoPaths.clear();
                               });
-
-                              Navigator.pop(context);
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                              }
                             },
                     ),
                   ],
