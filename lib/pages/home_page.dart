@@ -73,22 +73,26 @@ class _HomePageState extends ConsumerState<HomePage> {
                 itemCount: classes.length,
                 itemBuilder: (context, index) {
                   final classId = classes.keys.elementAt(index);
+                  final className = classes[classId]!;
+
                   return FutureBuilder<int>(
-                    future: driveService.PhotosCount(classId),
+                    future: driveService.photosCount(
+                      classId,
+                    ), // llamamos a la funcion de contar fotos
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return ListTile(
-                          title: Text(classes[classId]!),
+                          title: Text(className),
                           subtitle: Text('Cargando...'),
                         );
                       } else if (snapshot.hasError) {
                         return ListTile(
-                          title: Text(classes[classId]!),
+                          title: Text(className),
                           subtitle: Text('Error: ${snapshot.error}'),
                         );
                       } else {
                         return ListTile(
-                          title: Text(classes[classId]!),
+                          title: Text(className),
                           subtitle: Text(
                             'Fotos: ${snapshot.data ?? 0} / 10000 \n Faltantes: ${10000 - (snapshot.data ?? 0)}',
                           ),
