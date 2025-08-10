@@ -1,137 +1,70 @@
-import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:recolector_dataset/utils/delete_photos.dart';
-import 'package:uuid/uuid.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../utils/init_camera.dart';
+import '../utils/get_save_path.dart';
 import 'gallery_page.dart';
-import 'package:recolector_dataset/utils/imagen_utils.dart';
 
-class CapturePage extends StatefulWidget {
-  final String folderID;
+class CapturePage extends ConsumerStatefulWidget {
+  final String cloudFolderID;
   final String className;
 
   const CapturePage({
     super.key,
-    required this.folderID,
+    required this.cloudFolderID,
     required this.className,
   });
 
   @override
-  State<CapturePage> createState() => _CapturePageState();
+  CapturePageState createState() => CapturePageState();
 }
 
 const int maxPhotos = 50; // máximo de fotos a capturar
-const int intervalePhotos = 450; // milisegundos entre fotos
-List<String> photoPaths = [];
+const int intervalePhotos = 400; // milisegundos entre fotos
 String datasetFolder = 'dataset';
 
-class _CapturePageState extends State<CapturePage> {
+class CapturePageState extends ConsumerState<CapturePage> {
   CameraController? _controller;
-  late Future<void> _initializeControllerFuture;
 
   bool isCapturing = false;
   int photosTaken = 0;
+  bool isFlashOn = false;
 
   @override
   void initState() {
     super.initState();
-    _initCamera();
-  }
-
-  Future<void> _initCamera() async {
-    final cameras = await availableCameras();
-    final camera = cameras.firstWhere(
-      (cam) => cam.lensDirection == CameraLensDirection.back,
-      orElse: () => cameras.first,
-    );
-
-    _controller = CameraController(camera, ResolutionPreset.medium);
-    _initializeControllerFuture = _controller!.initialize();
-    await _initializeControllerFuture;
-    setState(() {});
-  }
-
-  Future<String> _getSavePath() async {
-    // final dir = await getApplicationDocumentsDirectory();
-    final dir = await getExternalStorageDirectory(); //
-    final folderPath = '${dir!.path}/dataset/${widget.folderID}';
-    final folder = Directory(folderPath);
-
-    if (!await folder.exists()) {
-      await folder.create(recursive: true);
-    }
-
-    return folderPath;
-  }
-
-  Future<void> _takeBurstPhotos() async {
-    if (isCapturing) return;
-
-    setState(() {
-      isCapturing = true;
-      photosTaken = 0;
-    });
-
-    final folderPath = await _getSavePath();
-    final uuid = Uuid();
-
-    for (int i = 0; i < maxPhotos; i++) {
-      try {
-        final fileName = '${uuid.v4()}.png'; // Cambiado a png
-        final filePath = '$folderPath/$fileName';
-
-        await _controller!.takePicture().then((XFile file) async {
-          // Copiar temporalmente
-          final tempFile = await File(file.path).copy(filePath);
-
-          // Optimizar y convertir a PNG
-          final optimizedFile = await resizeAndCompressImage(tempFile);
-
-          // Eliminar el archivo jpg original (si quieres)
-          if (tempFile.path != optimizedFile.path) {
-            await tempFile.delete();
-          }
-
-          // Guardar la ruta del archivo optimizado
-          photoPaths.add(optimizedFile.path);
+    initializeBackCamera()
+        .then((controller) {
+          _controller = controller;
+          setState(() {});
+        })
+        .catchError((e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al inicializar la cámara: $e')),
+          );
         });
-
-        setState(() {
-          photosTaken = i + 1;
-        });
-
-        await Future.delayed(Duration(milliseconds: intervalePhotos));
-      } catch (e) {
-        print('Error capturando foto $i: $e');
-      }
-    }
-
-    // cargar la dirección de las fotos tomadas
-    datasetFolder = _getSavePath().toString();
-
-    // extraemos la carpeta del dataset
-    // temporal = datasetFolder.substring(0, datasetFolder.lastIndexOf('/'));
-    setState(() {
-      isCapturing = false;
-    });
-
-    // navegar hacia la galería de las fotos tomadas
-    Navigator.push(
-      // ignore: use_build_context_synchronously
-      context,
-      MaterialPageRoute(
-        builder: (_) =>
-            GalleryPage(photoPaths: photoPaths, folderID: widget.folderID),
-      ),
-    );
   }
 
   @override
   void dispose() {
     _controller?.dispose();
     super.dispose();
+  }
+
+  Future<void> toggleFlash() async {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+    try {
+      if (isFlashOn) {
+        await _controller!.setFlashMode(FlashMode.off);
+      } else {
+        await _controller!.setFlashMode(FlashMode.torch);
+      }
+      setState(() {
+        isFlashOn = !isFlashOn;
+      });
+    } catch (e) {
+      print('Error al cambiar flash: $e');
+    }
   }
 
   @override
@@ -141,36 +74,60 @@ class _CapturePageState extends State<CapturePage> {
       body: Column(
         children: [
           if (_controller != null && _controller!.value.isInitialized)
-            AspectRatio(
-              // aspectRatio: _controller!.value.aspectRatio,
-              aspectRatio: 3 / 4, // Ajustar según sea necesario
-              child: CameraPreview(_controller!),
-            )
+            AspectRatio(aspectRatio: 3 / 4, child: CameraPreview(_controller!))
           else
             const Center(child: CircularProgressIndicator()),
-          SizedBox(height: 20),
+
+          const SizedBox(height: 20),
           Text('Fotos tomadas: $photosTaken / $maxPhotos'),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           ElevatedButton(
             onPressed:
                 isCapturing ||
                     _controller == null ||
                     !_controller!.value.isInitialized
                 ? null
-                : _takeBurstPhotos,
+                : () async {
+                    setState(() {
+                      isCapturing = true;
+                      photosTaken = 0;
+                    });
+
+                    await takeBurstPhotos(
+                      controller: _controller!,
+                      ref: ref,
+                      folderID: widget.cloudFolderID,
+                      maxPhotos: maxPhotos,
+                      datasetFolder: datasetFolder,
+                      onProgress: (count) {
+                        setState(() {
+                          photosTaken = count;
+                        });
+                      },
+                    );
+
+                    setState(() {
+                      isCapturing = false;
+                    });
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            GalleryPage(folderID: widget.cloudFolderID),
+                      ),
+                    );
+                  },
             child: Text(
               isCapturing ? 'Capturando...' : 'Iniciar ráfaga de fotos',
             ),
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           ElevatedButton(
-            onPressed: () async {
+            onPressed: () {
               Navigator.pop(context);
-              eliminarFotosLocales(
-                '${(await getExternalStorageDirectory())!.path}/dataset/${widget.folderID}',
-              );
             },
-            child: Text('Volver'),
+            child: const Text('Volver'),
           ),
         ],
       ),

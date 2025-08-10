@@ -12,16 +12,16 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   String? selectedClass;
-  String? folderID;
+  String? cloudFolderID;
 
   final Map<String, String> classes = {
     // modificar la lista para coordinar con el drive
     // "folderID": "Nombre visible"
-    "1jLEwjPBAUn6gC6eWHjh1nOh_Vjem_WGi": "Vidrios",
-    "1hdb14vXuEo0hZnvvqn6A66TvubEdyQUb": "Envases de yogurt",
-    "1EIAE-00Bn0BuPDPWsFNfmSt_AYovmZh5": "Periódicos",
-    "1iW9W6MJ3xwbVOXPIZ_mv1JxbkF9GvvZx": "Cáscaras de huevo",
-    "1rVZx2a_hdF624dEs7LW5oBTrtel8aJ1e": "Mates de sopa",
+    "1jLEwjPBAUn6gC6eWHjh1nOh_Vjem_WGi": "envases de vidrios",
+    "1hdb14vXuEo0hZnvvqn6A66TvubEdyQUb": "bolsas de yogurt",
+    "1EIAE-00Bn0BuPDPWsFNfmSt_AYovmZh5": "periódicos",
+    "1iW9W6MJ3xwbVOXPIZ_mv1JxbkF9GvvZx": "cáscaras de huevo",
+    "1rVZx2a_hdF624dEs7LW5oBTrtel8aJ1e": "desechos de mates de sopa",
   };
 
   @override
@@ -35,7 +35,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: Column(
           children: [
             DropdownButton<String>(
-              value: folderID, // ahora usamos el ID como valor de Dropdown
+              value: cloudFolderID, // ahora usamos el ID como valor de Dropdown
               hint: Text('Selecciona una clase'),
               isExpanded: true,
               items: classes.entries.map((entry) {
@@ -44,11 +44,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                   child: Text(entry.value), // el nombre visible
                 );
               }).toList(),
+              // actualizamos el estado al cambiar la selección
               onChanged: (value) => setState(() {
-                folderID = value;
+                cloudFolderID = value;
                 selectedClass = classes[value];
               }),
             ),
+
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: selectedClass == null
@@ -58,7 +60,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => CapturePage(
-                            folderID: folderID!,
+                            cloudFolderID: cloudFolderID!,
                             className: selectedClass!,
                           ),
                         ),

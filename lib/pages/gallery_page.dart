@@ -1,76 +1,63 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:recolector_dataset/utils/delete_photos.dart';
-import '../utils/upload_all.dart';
+import '../providers/images_provider.dart';
+import '../providers/upload_provider.dart';
 
-class GalleryPage extends ConsumerStatefulWidget {
-  final List<String> photoPaths;
+class GalleryPage extends ConsumerWidget {
   final String folderID;
 
-  const GalleryPage({
-    super.key,
-    required this.photoPaths,
-    required this.folderID,
-  });
+  const GalleryPage({super.key, required this.folderID});
 
   @override
-  ConsumerState<GalleryPage> createState() => _GalleryPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final images = ref.watch(imagesProvider);
+    final uploadState = ref.watch(uploadProvider);
+    final isUploading = uploadState.isUploading;
 
-class _GalleryPageState extends ConsumerState<GalleryPage> {
-  bool uploading = false;
-  double uploadProgress = 0.0;
-  int totalPhotos = 0;
-  int uploadedPhotos = 0;
+    Future<void> confirmDeletePhoto(int index) async {
+      final imageToDelete = images[index];
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Eliminar foto'),
+          content: const Text('¿Deseas eliminar esta foto?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        ),
+      );
 
-  Future<void> startUpload() async {
-    setState(() {
-      uploading = true;
-      totalPhotos = widget.photoPaths.length;
-      uploadedPhotos = 0;
-      uploadProgress = 0.0;
-    });
-
-    await uploadAllPhotos(
-      ref,
-      widget.photoPaths.map((path) => File(path)).toList(),
-      widget.folderID,
-      (progress) {
-        // progress viene como 0.0 -> 1.0
-        setState(() {
-          uploadProgress = progress;
-          uploadedPhotos = (progress * totalPhotos).round();
-        });
-      },
-    );
-
-    if (!mounted) return;
-    setState(() {
-      uploading = false;
-      widget.photoPaths.clear();
-    });
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Fotos subidas exitosamente')));
-
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      if (confirmed == true) {
+        try {
+          final file = File(imageToDelete.localFolder);
+          if (await file.exists()) {
+            await file.delete();
+          }
+          ref.read(imagesProvider.notifier).removeImage(imageToDelete.id);
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error eliminando foto: $e')),
+            );
+          }
+        }
+      }
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Galería de fotos (${widget.photoPaths.length})'),
-      ),
+      appBar: AppBar(title: Text('Galería de fotos (${images.length})')),
       body: Column(
         children: [
           Expanded(
-            child: widget.photoPaths.isEmpty
+            child: images.isEmpty
                 ? const Center(child: Text('No hay fotos tomadas'))
                 : GridView.builder(
                     padding: const EdgeInsets.all(8),
@@ -80,11 +67,14 @@ class _GalleryPageState extends ConsumerState<GalleryPage> {
                           mainAxisSpacing: 8,
                           crossAxisSpacing: 8,
                         ),
-                    itemCount: widget.photoPaths.length,
+                    itemCount: images.length,
                     itemBuilder: (context, index) {
-                      return Image.file(
-                        File(widget.photoPaths[index]),
-                        fit: BoxFit.cover,
+                      return GestureDetector(
+                        onTap: () => confirmDeletePhoto(index),
+                        child: Image.file(
+                          File(images[index].localFolder),
+                          fit: BoxFit.cover,
+                        ),
                       );
                     },
                   ),
@@ -93,17 +83,17 @@ class _GalleryPageState extends ConsumerState<GalleryPage> {
             padding: const EdgeInsets.all(12),
             child: Column(
               children: [
-                if (uploading) ...[
+                if (isUploading) ...[
                   LinearProgressIndicator(
-                    value: uploadProgress,
+                    value: uploadState.progress,
                     backgroundColor: Colors.grey[300],
                     color: Colors.green,
                     minHeight: 8,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${(uploadProgress * 100).toStringAsFixed(1)}% - '
-                    '$uploadedPhotos de $totalPhotos fotos subidas',
+                    '${(uploadState.progress * 100).toStringAsFixed(1)}% - '
+                    '${uploadState.uploaded} de ${uploadState.total} fotos subidas',
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -113,34 +103,28 @@ class _GalleryPageState extends ConsumerState<GalleryPage> {
                     ElevatedButton.icon(
                       icon: const Icon(Icons.upload_file),
                       label: const Text('Subir todas'),
-                      onPressed: uploading ? null : startUpload,
-                    ),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.delete),
-                      label: const Text('Eliminar todas'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                      ),
-                      onPressed: uploading
+                      onPressed: isUploading || images.isEmpty
                           ? null
                           : () async {
-                              final folderPath = widget.photoPaths.first
-                                  .substring(
-                                    0,
-                                    widget.photoPaths.first.lastIndexOf('/'),
+                              await ref
+                                  .read(uploadProvider.notifier)
+                                  .uploadPhotos(
+                                    images
+                                        .map((img) => File(img.localFolder))
+                                        .toList(),
+                                    folderID,
+                                    images.map((img) => img.id).toList(),
                                   );
-
-                              await eliminarFotosLocales(folderPath);
-
-                              if (!mounted) return;
-
-                              setState(() {
-                                widget.photoPaths.clear();
-                              });
-                              if (context.mounted) {
-                                Navigator.pop(context);
-                              }
                             },
+                    ),
+                    // un boton para mas capturas, que navege hasta a seleccion de clases
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Más capturas'),
+                      onPressed: () {
+                        // dos vistas atras
+                        Navigator.popUntil(context, (route) => route.isFirst);
+                      },
                     ),
                   ],
                 ),
