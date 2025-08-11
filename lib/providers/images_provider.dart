@@ -25,4 +25,9 @@ class ImagesNotify extends StateNotifier<List<Images>> {
   List<Images> getImagesByFolder(String folderID) {
     return state.where((image) => image.cloudFoler == folderID).toList();
   }
+
+  // Método para saber si hay imágenes en la lista
+  bool hasImages() {
+    return state.isNotEmpty;
+  }
 }

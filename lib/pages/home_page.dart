@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:recolector_dataset/main.dart';
+import 'package:recolector_dataset/pages/gallery_page.dart';
 import 'capture_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/images_provider.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -18,8 +20,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     // modificar la lista para coordinar con el drive
     // "folderID": "Nombre visible"
     "1jLEwjPBAUn6gC6eWHjh1nOh_Vjem_WGi": "envases de vidrios",
-    "1hdb14vXuEo0hZnvvqn6A66TvubEdyQUb": "bolsas de yogurt",
-    "1EIAE-00Bn0BuPDPWsFNfmSt_AYovmZh5": "periódicos",
+    "1hdb14vXuEo0hZnvvqn6A66TvubEdyQUb": "hoja de papel",
+    "1EIAE-00Bn0BuPDPWsFNfmSt_AYovmZh5": "conos de hilos",
     "1iW9W6MJ3xwbVOXPIZ_mv1JxbkF9GvvZx": "cáscaras de huevo",
     "1rVZx2a_hdF624dEs7LW5oBTrtel8aJ1e": "desechos de mates de sopa",
   };
@@ -68,6 +70,20 @@ class _HomePageState extends ConsumerState<HomePage> {
                     },
               child: Text('Empezar captura'),
             ),
+            // boton para ir a la galería de fotos si existen fotos
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: ref.read(imagesProvider.notifier).hasImages()
+                  ? () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => GalleryPage()),
+                      );
+                    }
+                  : null, // botón desactivado cuando no hay imágenes
+              child: Text('Abrir galería'),
+            ),
+
             // mostramos la lista de cantidad de fotos por clase
             SizedBox(height: 20),
             Expanded(

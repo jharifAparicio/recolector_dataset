@@ -5,9 +5,7 @@ import '../providers/images_provider.dart';
 import '../providers/upload_provider.dart';
 
 class GalleryPage extends ConsumerWidget {
-  final String folderID;
-
-  const GalleryPage({super.key, required this.folderID});
+  const GalleryPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -108,13 +106,7 @@ class GalleryPage extends ConsumerWidget {
                           : () async {
                               await ref
                                   .read(uploadProvider.notifier)
-                                  .uploadPhotos(
-                                    images
-                                        .map((img) => File(img.localFolder))
-                                        .toList(),
-                                    folderID,
-                                    images.map((img) => img.id).toList(),
-                                  );
+                                  .uploadPhotos();
                             },
                     ),
                     // un boton para mas capturas, que navege hasta a seleccion de clases

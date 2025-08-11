@@ -20,7 +20,7 @@ class CapturePage extends ConsumerStatefulWidget {
 }
 
 const int maxPhotos = 50; // máximo de fotos a capturar
-const int intervalePhotos = 400; // milisegundos entre fotos
+const int intervalePhotos = 350; // milisegundos entre fotos
 String datasetFolder = 'dataset';
 
 class CapturePageState extends ConsumerState<CapturePage> {
@@ -112,10 +112,7 @@ class CapturePageState extends ConsumerState<CapturePage> {
 
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            GalleryPage(folderID: widget.cloudFolderID),
-                      ),
+                      MaterialPageRoute(builder: (_) => GalleryPage()),
                     );
                   },
             child: Text(

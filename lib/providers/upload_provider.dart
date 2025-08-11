@@ -37,7 +37,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
   UploadNotifier(this.ref) : super(UploadState()) {
     // Escuchar cambios en la lista global de imágenes
     _subscription = ref.listen<List<Images>>(imagesProvider, (previous, next) {
-      _onImagesChanged(next);
+      _onImagesChanged();
     });
   }
 
@@ -45,25 +45,23 @@ class UploadNotifier extends StateNotifier<UploadState> {
   bool _isUploading = false;
   late final ProviderSubscription<List<Images>> _subscription;
 
-  Future<void> _onImagesChanged(List<Images> images) async {
+  Future<void> _onImagesChanged() async {
     if (_isUploading) return;
 
+    final images = ref.read(imagesProvider);
     if (images.isNotEmpty) {
-      // Extraer listas de archivos y IDs para subir
-      final photos = images.map((img) => File(img.localFolder)).toList();
-      final photoIds = images.map((img) => img.id).toList();
-
-      await uploadPhotos(photos, images.first.cloudFoler, photoIds);
+      await uploadPhotos();
     }
   }
 
-  Future<void> uploadPhotos(
-    List<File> photos,
-    String folderId,
-    List<String> photoIds,
-  ) async {
+  Future<void> uploadPhotos() async {
     if (_isUploading) return;
     _isUploading = true;
+
+    final images = ref.read(imagesProvider);
+    final photos = images.map((img) => File(img.localFolder)).toList();
+    final photoIds = images.map((img) => img.id).toList();
+
     state = state.copyWith(
       isUploading: true,
       total: photos.length,
@@ -74,7 +72,12 @@ class UploadNotifier extends StateNotifier<UploadState> {
     for (int i = 0; i < photos.length; i++) {
       final photo = photos[i];
       try {
-        await uploadPhoto(ref, folderId, photo.path, photoIds[i]);
+        await uploadPhoto(
+          ref,
+          images.first.cloudFoler,
+          photo.path,
+          photoIds[i],
+        );
         // Eliminar la imagen del estado global después de subirla
         ref.read(imagesProvider.notifier).removeImage(photoIds[i]);
 
