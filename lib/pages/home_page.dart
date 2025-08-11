@@ -3,6 +3,7 @@ import 'package:recolector_dataset/main.dart';
 import 'package:recolector_dataset/pages/gallery_page.dart';
 import 'capture_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../utils/class_mapping.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -15,18 +16,34 @@ class _HomePageState extends ConsumerState<HomePage> {
   String? selectedClass;
   String? cloudFolderID;
 
-  final Map<String, String> classes = {
+  Map<String, String>? classes; //= await loadClassMapping();
+  /* {
     // modificar la lista para coordinar con el drive
     // "folderID": "Nombre visible"
     "1jLEwjPBAUn6gC6eWHjh1nOh_Vjem_WGi": "envases de vidrios",
-    "1hdb14vXuEo0hZnvvqn6A66TvubEdyQUb": "hoja de papel",
+    "1hdb14vXuEo0hZnvvqn6A66TvubEdyQUb": "restos de hilos",
     "1EIAE-00Bn0BuPDPWsFNfmSt_AYovmZh5": "conos de hilos",
     "1iW9W6MJ3xwbVOXPIZ_mv1JxbkF9GvvZx": "cáscaras de huevo",
     "1rVZx2a_hdF624dEs7LW5oBTrtel8aJ1e": "desechos de mates de sopa",
-  };
+  };*/
+
+  @override
+  void initState() {
+    super.initState();
+    cargarClases(); // cargar las clases al iniciar
+  }
+
+  Future<void> cargarClases() async {
+    classes = await loadClassMapping();
+    setState(() {}); // para refrescar UI cuando carga
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (classes == null) {
+      return CircularProgressIndicator(); // o alguna pantalla de carga
+    }
+
     final driveService = ref.read(driveServiceProvider);
 
     return Scaffold(
@@ -39,7 +56,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               value: cloudFolderID, // ahora usamos el ID como valor de Dropdown
               hint: Text('Selecciona una clase'),
               isExpanded: true,
-              items: classes.entries.map((entry) {
+              items: classes!.entries.map((entry) {
                 return DropdownMenuItem<String>(
                   value: entry.key, // el ID
                   child: Text(entry.value), // el nombre visible
@@ -48,7 +65,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               // actualizamos el estado al cambiar la selección
               onChanged: (value) => setState(() {
                 cloudFolderID = value;
-                selectedClass = classes[value];
+                selectedClass = classes![value];
               }),
             ),
 
@@ -88,10 +105,10 @@ class _HomePageState extends ConsumerState<HomePage> {
             SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
-                itemCount: classes.length,
+                itemCount: classes!.length,
                 itemBuilder: (context, index) {
-                  final classId = classes.keys.elementAt(index);
-                  final className = classes[classId]!;
+                  final classId = classes!.keys.elementAt(index);
+                  final className = classes![classId]!;
 
                   return FutureBuilder<int>(
                     future: driveService.photosCount(

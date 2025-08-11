@@ -25,7 +25,8 @@ class RecolectorDatasetApp extends ConsumerWidget {
       data: (_) => MaterialApp(
         title: 'Recolector Dataset',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(primarySwatch: Colors.green),
+        theme: ThemeData.dark(), // Solo tema oscuro
+        themeMode: ThemeMode.dark, // Forzar oscuro
         home: const HomePage(),
       ),
       loading: () => const MaterialApp(
