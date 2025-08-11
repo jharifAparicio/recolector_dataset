@@ -3,7 +3,6 @@ import 'package:recolector_dataset/main.dart';
 import 'package:recolector_dataset/pages/gallery_page.dart';
 import 'capture_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/images_provider.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -73,14 +72,15 @@ class _HomePageState extends ConsumerState<HomePage> {
             // boton para ir a la galería de fotos si existen fotos
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: ref.read(imagesProvider.notifier).hasImages()
-                  ? () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => GalleryPage()),
-                      );
-                    }
-                  : null, // botón desactivado cuando no hay imágenes
+              onPressed: () => {
+                (
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => GalleryPage()),
+                  ),
+                ),
+              },
+              // botón desactivado cuando no hay imágenes
               child: Text('Abrir galería'),
             ),
 

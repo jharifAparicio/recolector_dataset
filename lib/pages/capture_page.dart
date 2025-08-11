@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:recolector_dataset/widgets/upload_progress_indicator.dart';
 import '../utils/init_camera.dart';
 import '../utils/get_save_path.dart';
 import 'gallery_page.dart';
@@ -19,7 +20,8 @@ class CapturePage extends ConsumerStatefulWidget {
   CapturePageState createState() => CapturePageState();
 }
 
-const int maxPhotos = 50; // máximo de fotos a capturar
+// const int maxPhotos = 50; // máximo de fotos a capturar // produccion
+const int maxPhotos = 10; // máximo de fotos a capturar // para pruebas
 const int intervalePhotos = 350; // milisegundos entre fotos
 String datasetFolder = 'dataset';
 
@@ -81,6 +83,7 @@ class CapturePageState extends ConsumerState<CapturePage> {
           const SizedBox(height: 20),
           Text('Fotos tomadas: $photosTaken / $maxPhotos'),
           const SizedBox(height: 20),
+          UploadProgressIndicator(),
           ElevatedButton(
             onPressed:
                 isCapturing ||

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:recolector_dataset/widgets/upload_progress_indicator.dart';
 import '../providers/images_provider.dart';
 import '../providers/upload_provider.dart';
 
@@ -81,20 +82,8 @@ class GalleryPage extends ConsumerWidget {
             padding: const EdgeInsets.all(12),
             child: Column(
               children: [
-                if (isUploading) ...[
-                  LinearProgressIndicator(
-                    value: uploadState.progress,
-                    backgroundColor: Colors.grey[300],
-                    color: Colors.green,
-                    minHeight: 8,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${(uploadState.progress * 100).toStringAsFixed(1)}% - '
-                    '${uploadState.uploaded} de ${uploadState.total} fotos subidas',
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                UploadProgressIndicator(),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
