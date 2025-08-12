@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'pages/home_page.dart';
 import 'services/drive_service.dart';
+import 'providers/settings_provider.dart';
 
 void main() {
   runApp(const ProviderScope(child: RecolectorDatasetApp()));
@@ -20,13 +21,15 @@ class RecolectorDatasetApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final initAsync = ref.watch(driveInitProvider);
+    final settings = ref.watch(settingsProvider);
 
     return initAsync.when(
       data: (_) => MaterialApp(
         title: 'Recolector Dataset',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData.dark(), // Solo tema oscuro
-        themeMode: ThemeMode.dark, // Forzar oscuro
+        theme: ThemeData.light(), // tema claro
+        darkTheme: ThemeData.dark(), // tema oscuro
+        themeMode: settings.themeMode, // controla cuál se usa
         home: const HomePage(),
       ),
       loading: () => const MaterialApp(

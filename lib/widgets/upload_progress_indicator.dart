@@ -24,7 +24,7 @@ class UploadProgressIndicator extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             '${(uploadState.progress * 100).toStringAsFixed(1)}% - '
-            '${uploadState.uploaded} de ${uploadState.total * 2} fotos subidas',
+            '${uploadState.uploaded} de ${uploadState.total} fotos subidas',
           ),
           const SizedBox(height: 16),
         ],

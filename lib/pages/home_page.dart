@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:recolector_dataset/main.dart';
 import 'package:recolector_dataset/pages/gallery_page.dart';
+import 'package:recolector_dataset/pages/settings_page.dart';
 import 'capture_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/class_mapping.dart';
@@ -16,16 +17,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   String? selectedClass;
   String? cloudFolderID;
 
-  Map<String, String>? classes; //= await loadClassMapping();
-  /* {
-    // modificar la lista para coordinar con el drive
-    // "folderID": "Nombre visible"
-    "1jLEwjPBAUn6gC6eWHjh1nOh_Vjem_WGi": "envases de vidrios",
-    "1hdb14vXuEo0hZnvvqn6A66TvubEdyQUb": "restos de hilos",
-    "1EIAE-00Bn0BuPDPWsFNfmSt_AYovmZh5": "conos de hilos",
-    "1iW9W6MJ3xwbVOXPIZ_mv1JxbkF9GvvZx": "cáscaras de huevo",
-    "1rVZx2a_hdF624dEs7LW5oBTrtel8aJ1e": "desechos de mates de sopa",
-  };*/
+  Map<String, String>? classes; // para almacenar las clases cargadas
 
   @override
   void initState() {
@@ -47,7 +39,20 @@ class _HomePageState extends ConsumerState<HomePage> {
     final driveService = ref.read(driveServiceProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Selecciona la clase')),
+      appBar: AppBar(
+        title: Text('Selecciona la clase'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings), // engranaje
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              );
+            },
+          ),
+        ],
+      ),
       body: Padding(
         padding: EdgeInsets.all(16),
         child: Column(

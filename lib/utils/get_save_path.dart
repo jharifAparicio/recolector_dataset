@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/images.dart';
 import '../providers/images_provider.dart';
+import '../providers/settings_provider.dart';
 import 'imagen_utils.dart';
 
 Future<void> takeBurstPhotos({
@@ -18,6 +19,7 @@ Future<void> takeBurstPhotos({
 }) async {
   final uuid = Uuid();
   int photosTaken = 0;
+  int interval = ref.watch(settingsProvider).delay;
 
   final dir = await getExternalStorageDirectory(); //
   final folderPath = '${dir!.path}/dataset/$folderID';
@@ -50,9 +52,7 @@ Future<void> takeBurstPhotos({
       photosTaken = i + 1;
       onProgress(photosTaken);
 
-      await Future.delayed(
-        const Duration(milliseconds: 450),
-      ); // intervalo fijo, puedes parametrizar
+      await Future.delayed(Duration(milliseconds: interval));
     } catch (e) {
       print('Error capturando foto $i: $e');
     }

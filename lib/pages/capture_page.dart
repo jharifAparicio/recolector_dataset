@@ -5,6 +5,7 @@ import 'package:recolector_dataset/widgets/upload_progress_indicator.dart';
 import '../utils/init_camera.dart';
 import '../utils/get_save_path.dart';
 import 'gallery_page.dart';
+import '../providers/settings_provider.dart';
 
 class CapturePage extends ConsumerStatefulWidget {
   final String cloudFolderID;
@@ -20,9 +21,6 @@ class CapturePage extends ConsumerStatefulWidget {
   CapturePageState createState() => CapturePageState();
 }
 
-// const int maxPhotos = 50; // máximo de fotos a capturar // produccion
-const int maxPhotos = 10; // máximo de fotos a capturar // para pruebas
-const int intervalePhotos = 350; // milisegundos entre fotos
 String datasetFolder = 'dataset';
 
 class CapturePageState extends ConsumerState<CapturePage> {
@@ -71,6 +69,8 @@ class CapturePageState extends ConsumerState<CapturePage> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = ref.watch(settingsProvider);
+    int maxPhotos = settings.cantidadPhotos;
     return Scaffold(
       appBar: AppBar(title: Text('Capturando: ${widget.className}')),
       body: Column(
