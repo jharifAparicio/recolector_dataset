@@ -46,28 +46,6 @@ class CapturePageState extends ConsumerState<CapturePage> {
   }
 
   @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
-  }
-
-  Future<void> toggleFlash() async {
-    if (_controller == null || !_controller!.value.isInitialized) return;
-    try {
-      if (isFlashOn) {
-        await _controller!.setFlashMode(FlashMode.off);
-      } else {
-        await _controller!.setFlashMode(FlashMode.torch);
-      }
-      setState(() {
-        isFlashOn = !isFlashOn;
-      });
-    } catch (e) {
-      print('Error al cambiar flash: $e');
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     int maxPhotos = settings.cantidadPhotos;

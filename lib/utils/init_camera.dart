@@ -12,5 +12,8 @@ Future<CameraController> initializeBackCamera({
   final controller = CameraController(camera, resolution);
   await controller.initialize();
 
+  await controller.setFlashMode(FlashMode.off);
+  await controller.setFocusMode(FocusMode.locked);
+
   return controller;
 }
