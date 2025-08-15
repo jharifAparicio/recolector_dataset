@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:recolector_dataset/models/images.dart';
 import 'package:recolector_dataset/providers/images_provider.dart';
@@ -100,11 +99,8 @@ class UploadNotifier extends StateNotifier<UploadState> {
       try {
         if (settings.dataAugmentation) {
           for (int v = 0; v < variantsCount; v++) {
-            final variantPhotoPath = await compute(
-              generateOneVariantSync,
-              photo.path,
-            );
-            final variantPhoto = File(variantPhotoPath);
+            final variantPhotoPath = await generateOneVariantSync(photo);
+            final variantPhoto = File(variantPhotoPath.path);
             final optimizedVariant = await resizeAndCompressImage(variantPhoto);
             await uploadPhoto(
               ref,
