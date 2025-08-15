@@ -6,15 +6,17 @@ import 'package:http/http.dart' as http;
 
 class DriveService {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [drive.DriveApi.driveFileScope],
+    scopes: [drive.DriveApi.driveScope],
   );
 
   GoogleSignInAccount? _currentUser;
   drive.DriveApi? _driveApi;
 
   Future<void> init() async {
-    _currentUser = await _googleSignIn.signInSilently();
+    // forzamos a cerrar sesión para evitar problemas de autenticación
+    await _googleSignIn.disconnect();
 
+    _currentUser = await _googleSignIn.signInSilently();
     _currentUser ??= await _googleSignIn.signIn();
 
     if (_currentUser == null) {
@@ -50,7 +52,8 @@ class DriveService {
 
     // Consulta para contar las fotos en la carpeta
     final query =
-        "'$carpetaID' in parents and mimeType contains 'image/' and trashed = false";
+        "'$carpetaID' in parents and (mimeType='image/jpeg' or mimeType='image/png') and trashed = false";
+
     int total = 0;
     String? pageToken;
 
