@@ -14,12 +14,14 @@ class UploadState {
   final double progress;
   final int total;
   final int uploaded;
+  final String? message; // <-- nuevo campo para mensajes de error
 
   UploadState({
     this.isUploading = false,
     this.progress = 0.0,
     this.total = 0,
     this.uploaded = 0,
+    this.message,
   });
 
   UploadState copyWith({
@@ -27,12 +29,14 @@ class UploadState {
     double? progress,
     int? total,
     int? uploaded,
+    String? message,
   }) {
     return UploadState(
       isUploading: isUploading ?? this.isUploading,
       progress: progress ?? this.progress,
       total: total ?? this.total,
       uploaded: uploaded ?? this.uploaded,
+      message: message ?? this.message,
     );
   }
 }
@@ -107,6 +111,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
               images.first.cloudFoler,
               optimizedVariant.path,
               variantPhoto.path.split('/').last,
+              (msq) => state = state.copyWith(message: msq),
             );
             variantPhoto.deleteSync();
 
@@ -125,6 +130,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
           images.first.cloudFoler,
           photo.path,
           photoIds[i],
+          (msq) => state = state.copyWith(message: msq),
         );
 
         progreso++;

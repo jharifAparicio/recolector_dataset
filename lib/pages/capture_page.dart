@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:recolector_dataset/providers/upload_provider.dart';
 import 'package:recolector_dataset/widgets/upload_progress_indicator.dart';
 import '../utils/init_camera.dart';
 import '../utils/get_save_path.dart';
@@ -48,6 +49,9 @@ class CapturePageState extends ConsumerState<CapturePage> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
+    final uploadState = ref.watch(uploadProvider);
+    final message = uploadState.message; // 🟢 Accedes al campo
+
     int maxPhotos = settings.cantidadPhotos;
     return Scaffold(
       appBar: AppBar(title: Text('Capturando: ${widget.className}')),
@@ -107,6 +111,29 @@ class CapturePageState extends ConsumerState<CapturePage> {
             },
             child: const Text('Volver'),
           ),
+          // Mensaje de error no invasivo
+          if (message != null)
+            Positioned(
+              bottom: 16,
+              left: 16,
+              right: 16,
+              child: Material(
+                // ignore: deprecated_member_use
+                color: Colors.red.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12.0,
+                    horizontal: 16.0,
+                  ),
+                  child: Text(
+                    message,
+                    style: const TextStyle(color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

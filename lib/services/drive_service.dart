@@ -2,20 +2,17 @@ import 'dart:io';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
-// import 'package:googleapis_auth/auth_io.dart' as auth;
 
+/// Servicio de Google Drive con renovación automática de sesión
 class DriveService {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [drive.DriveApi.driveScope],
   );
 
   GoogleSignInAccount? _currentUser;
-  drive.DriveApi? _driveApi;
 
+  /// Inicializa sesión en Google Drive
   Future<void> init() async {
-    // forzamos a cerrar sesión para evitar problemas de autenticación
-    if (_currentUser != null) await _googleSignIn.disconnect();
-
     _currentUser = await _googleSignIn.signInSilently();
     _currentUser ??= await _googleSignIn.signIn();
 
@@ -25,32 +22,36 @@ class DriveService {
         'Verifique su conexión a internet y las credenciales.',
       );
     }
+  }
+
+  /// Obtiene una instancia de la API de Drive con credenciales actualizadas
+  Future<drive.DriveApi> _getDriveApi() async {
+    if (_currentUser == null) {
+      await init();
+    }
 
     final authHeaders = await _currentUser!.authHeaders;
     final client = GoogleAuthClient(authHeaders);
-
-    _driveApi = drive.DriveApi(client);
+    return drive.DriveApi(client);
   }
 
+  /// Sube un archivo a Google Drive
   Future<String?> uploadFile(File file, String folderId) async {
-    if (_driveApi == null) throw Exception('Google Drive no inicializado');
+    final api = await _getDriveApi(); // ✅ token fresco en cada request
 
     final media = drive.Media(file.openRead(), await file.length());
     final driveFile = drive.File()
       ..name = file.path.split('/').last
       ..parents = [folderId];
 
-    final response = await _driveApi!.files.create(
-      driveFile,
-      uploadMedia: media,
-    );
+    final response = await api.files.create(driveFile, uploadMedia: media);
     return response.id;
   }
 
+  /// Cuenta fotos dentro de una carpeta en Drive
   Future<int> photosCount(String carpetaID) async {
-    if (_driveApi == null) throw Exception('Google Drive no inicializado');
+    final api = await _getDriveApi(); // ✅ token fresco aquí también
 
-    // Consulta para contar las fotos en la carpeta
     final query =
         "'$carpetaID' in parents and (mimeType='image/jpeg' or mimeType='image/png') and trashed = false";
 
@@ -58,8 +59,7 @@ class DriveService {
     String? pageToken;
 
     do {
-      // Utilizamos la API de Google Drive para listar los archivos
-      final fileList = await _driveApi!.files.list(
+      final fileList = await api.files.list(
         q: query,
         spaces: 'drive',
         $fields: 'nextPageToken, files(id)',
@@ -68,9 +68,15 @@ class DriveService {
       );
       total += fileList.files?.length ?? 0;
       pageToken = fileList.nextPageToken;
-      // Retornamos la cantidad de archivos encontrados
     } while (pageToken != null);
+
     return total;
+  }
+
+  /// Cierra sesión manualmente si es necesario
+  Future<void> signOut() async {
+    await _googleSignIn.disconnect();
+    _currentUser = null;
   }
 }
 
