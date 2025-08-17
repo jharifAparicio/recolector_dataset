@@ -46,11 +46,11 @@ Future<File> generateOneVariantSync(File photo) async {
   return variantFile;
 }
 
-img.Image _adjustBrightness(img.Image src, double factor) {
-  // factor entre 0.9 y 1.1
-  int value = (factor * 100).clamp(0, 100).toInt();
-  return img.adjustColor(src, brightness: value);
-}
+// img.Image _adjustBrightness(img.Image src, double factor) {
+// factor entre 0.9 y 1.1
+// int value = (factor * 100).clamp(0, 100).toInt();
+// return img.adjustColor(src, brightness: value);
+// }
 
 img.Image _blurImage(img.Image src, double radius) {
   int r = radius.round().clamp(1, 5); // mínimo 1, máximo 5

@@ -5,6 +5,7 @@ import 'package:recolector_dataset/pages/settings_page.dart';
 import 'capture_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/class_mapping.dart';
+import '../widgets/class_card.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -106,36 +107,33 @@ class _HomePageState extends ConsumerState<HomePage> {
               child: Text('Abrir galería'),
             ),
 
-            // mostramos la lista de cantidad de fotos por clase
+            // lista de clases con sus fotos
             SizedBox(height: 20),
             Expanded(
-              child: ListView.builder(
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, // 2 columnas
+                  crossAxisSpacing: 3, // espacio entre columnas
+                  mainAxisSpacing: 3, // espacio entre tarjetas
+                  childAspectRatio:
+                      1.8, // relación de aspecto para que se vea bien
+                ),
                 itemCount: classes!.length,
                 itemBuilder: (context, index) {
                   final classId = classes!.keys.elementAt(index);
                   final className = classes![classId]!;
 
                   return FutureBuilder<int>(
-                    future: driveService.photosCount(
-                      classId,
-                    ), // llamamos a la funcion de contar fotos
+                    future: driveService.photosCount(classId),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return ListTile(
-                          title: Text(className),
-                          subtitle: Text('Cargando...'),
-                        );
+                        return ClassCard(title: className, count: null);
                       } else if (snapshot.hasError) {
-                        return ListTile(
-                          title: Text(className),
-                          subtitle: Text('Error: ${snapshot.error}'),
-                        );
+                        return ClassCard(title: className, count: -1);
                       } else {
-                        return ListTile(
-                          title: Text(className),
-                          subtitle: Text(
-                            'Fotos: ${snapshot.data ?? 0} / 10000 \n Faltantes: ${10000 - (snapshot.data ?? 0)}',
-                          ),
+                        return ClassCard(
+                          title: className,
+                          count: snapshot.data ?? 0,
                         );
                       }
                     },

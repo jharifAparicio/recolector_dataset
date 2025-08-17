@@ -14,7 +14,7 @@ class DriveService {
 
   Future<void> init() async {
     // forzamos a cerrar sesión para evitar problemas de autenticación
-    await _googleSignIn.disconnect();
+    if (_currentUser != null) await _googleSignIn.disconnect();
 
     _currentUser = await _googleSignIn.signInSilently();
     _currentUser ??= await _googleSignIn.signIn();
